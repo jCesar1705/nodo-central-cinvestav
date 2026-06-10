@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SAES — Administración</title>
+  <style>
+    /* ── Paleta del proyecto ────────────────────────────────── */
+    :root {
+      --navy:    #0D2137;
+      --teal:    #028090;
+      --teal2:   #1C7293;
+      --mint:    #02C39A;
+      --light:   #EAF6F8;
+      --white:   #FFFFFF;
+      --text:    #0D2137;
+      --muted:   #5A7A85;
+      --danger:  #C0392B;
+      --warn:    #E67E22;
+      --offline: #95A5A6;
+      --sidebar: 220px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      background: var(--light);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ── Sidebar ────────────────────────────────────────────── */
+    aside {
+      width: var(--sidebar);
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; bottom: 0; left: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+    }
+    .sidebar-header .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--mint);
+      letter-spacing: -.3px;
+    }
+    .sidebar-header .sub {
+      font-size: 11px;
+      color: rgba(255,255,255,.45);
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+
+    nav { padding: 12px 0; flex: 1; }
+
+    nav a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 20px;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      font-size: 13px;
+      transition: background .15s, color .15s;
+      cursor: pointer;
+    }
+    nav a:hover { background: rgba(255,255,255,.06); color: var(--white); }
+    nav a.active {
+      background: var(--teal);
+      color: var(--white);
+      border-left: 3px solid var(--mint);
+      padding-left: 17px;
+    }
+    nav a .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      font-size: 11px;
+      color: rgba(255,255,255,.3);
+    }
+
+    /* ── Contenido principal ─────────────────────────────────── */
+    main {
+      margin-left: var(--sidebar);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--white);
+      border-bottom: 1px solid #D0E8ED;
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { font-size: 17px; font-weight: 600; color: var(--navy); }
+    header h1 span { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 8px; }
+
+    /* ── Toast de notificaciones ─────────────────────────────── */
+    #toast {
+      position: fixed;
+      top: 20px; right: 20px;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      z-index: 9999;
+      display: none;
+      animation: fadeIn .2s ease;
+    }
+    #toast.ok  { background: var(--mint); color: #fff; }
+    #toast.err { background: var(--danger); color: #fff; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } }
+
+    /* ── Secciones ───────────────────────────────────────────── */
+    section { display: none; padding: 28px; max-width: 1100px; width: 100%; }
+    section.active { display: block; }
+
+    .section-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .section-bar h2 { font-size: 15px; font-weight: 600; color: var(--navy); }
+
+    /* ── Botones ─────────────────────────────────────────────── */
+    .btn {
+      padding: 7px 16px;
+      border: none;
+      border-radius: 5px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: filter .15s;
+    }
+    .btn:hover { filter: brightness(.9); }
+    .btn-primary { background: var(--teal); color: #fff; }
+    .btn-danger  { background: var(--danger); color: #fff; padding: 4px 10px; font-size: 12px; }
+    .btn-edit    { background: var(--teal2); color: #fff; padding: 4px 10px; font-size: 12px; }
+    .btn-sync    { background: var(--mint); color: #fff; font-size: 14px; padding: 10px 24px; }
+
+    /* ── Tablas ──────────────────────────────────────────────── */
+    .table-wrap { background: #fff; border-radius: 8px; border: 1px solid #D0E8ED; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: var(--navy);
+      color: rgba(255,255,255,.85);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      padding: 10px 14px;
+      text-align: left;
+    }
+    tbody tr { border-bottom: 1px solid #ECF5F7; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #F5FBFC; }
+    td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-online    { background: #D5F5EC; color: #0A8C64; }
+    .badge-offline   { background: #F0F0F0; color: #888; }
+    .badge-unknown   { background: #FFF3E0; color: #E67E22; }
+    .badge-segura    { background: #D5F5EC; color: #0A8C64; }
+    .badge-riesgo    { background: #FDECEA; color: var(--danger); }
+    .badge-normal    { background: #EAF6F8; color: var(--teal2); }
+    .badge-usuario   { background: #EAF6F8; color: var(--teal); }
+    .badge-brigadista{ background: #FFF3E0; color: var(--warn); }
+    .badge-admin     { background: #FDECEA; color: var(--danger); }
+
+    .actions { display: flex; gap: 6px; }
+    .empty { padding: 32px; text-align: center; color: var(--muted); font-style: italic; }
+
+    /* ── Formulario inline ───────────────────────────────────── */
+    .form-box {
+      background: #fff;
+      border: 1px solid #D0E8ED;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .form-box.open { display: block; }
+    .form-box h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: var(--navy); }
+
+    .form-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px; }
+    .form-group label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      border: 1px solid #C5DDE2;
+      border-radius: 5px;
+      padding: 7px 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color .15s;
+      background: #fff;
+      color: var(--text);
+    }
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--teal); }
+
+    .form-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+    /* ── Sección sync ────────────────────────────────────────── */
+    .sync-info {
+      background: #fff;
+      border: 1px solid #D0E8ED;
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .sync-info strong { color: var(--navy); }
+
+    #sync-results-wrap { display: none; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
+<aside>
+  <div class="sidebar-header">
+    <div class="logo">⚠ SAES</div>
+    <div class="sub">Administración del sistema</div>
+  </div>
+  <nav>
+    <a class="active" onclick="go('edificios')">
+      <span class="icon">🏢</span> Edificios
+    </a>
+    <a onclick="go('zonas')">
+      <span class="icon">📍</span> Zonas
+    </a>
+    <a onclick="go('nodos')">
+      <span class="icon">🖥</span> Nodos FOG
+    </a>
+    <a onclick="go('usuarios')">
+      <span class="icon">👥</span> Usuarios
+    </a>
+    <a onclick="go('parametros')">
+      <span class="icon">⚙️</span> Parámetros
+    </a>
+    <a onclick="go('sync')">
+      <span class="icon">🔄</span> Sincronizar
+    </a>
+    <a onclick="go('emergencias')">
+      <span class="icon">🚨</span> Emergencias
+    </a>
+  </nav>
+  <div class="sidebar-footer">Nodo central · :9090</div>
+</aside>
+
+<!-- ── CABECERA ─────────────────────────────────────────────────── -->
+<main>
+<header>
+  <h1 id="page-title">Edificios <span>— Gestión de instalaciones</span></h1>
+  <div style="font-size:12px;color:var(--muted)" id="api-status">Conectando…</div>
+</header>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     EDIFICIOS
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-edificios" class="active">
+  <div class="section-bar">
+    <h2>Edificios registrados</h2>
+    <button class="btn btn-primary" onclick="toggleForm('f-edificio')">+ Agregar edificio</button>
+  </div>
+
+  <div class="form-box" id="f-edificio">
+    <h3 id="f-edificio-title">Nuevo edificio</h3>
+    <input type="hidden" id="f-edificio-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Clave *</label>
+        <input id="f-e-clave" placeholder="ej. A, COMP" maxlength="16" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>Nombre *</label>
+        <input id="f-e-nombre" placeholder="Edificio A — Computación" />
+      </div>
+      <div class="form-group" style="flex:3">
+        <label>Descripción</label>
+        <input id="f-e-desc" placeholder="Descripción breve" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveEdificio()">Guardar</button>
+      <button class="btn" style="background:#eee" onclick="closeForm('f-edificio')">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Clave</th><th>Nombre</th><th>Descripción</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tbl-edificios"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ZONAS
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-zonas">
+  <div class="section-bar">
+    <h2>Zonas del edificio</h2>
+    <div style="display:flex;gap:10px;align-items:center">
+      <select id="zona-filtro" onchange="loadZonas()" style="padding:6px 10px;border:1px solid #C5DDE2;border-radius:5px;font-size:13px">
+        <option value="">Todos los edificios</option>
+      </select>
+      <button class="btn btn-primary" onclick="toggleForm('f-zona')">+ Agregar zona</button>
+    </div>
+  </div>
+
+  <div class="form-box" id="f-zona">
+    <h3 id="f-zona-title">Nueva zona</h3>
+    <input type="hidden" id="f-zona-id" />
+    <div class="form-row">
+      <div class="form-group" style="flex:3">
+        <label>Nombre *</label>
+        <input id="f-z-nombre" placeholder="Punto de reunión patio central" />
+      </div>
+      <div class="form-group">
+        <label>Edificio *</label>
+        <select id="f-z-edificio"></select>
+      </div>
+      <div class="form-group">
+        <label>Tipo *</label>
+        <select id="f-z-tipo">
+          <option value="SEGURA">🟢 SEGURA</option>
+          <option value="NORMAL" selected>⬜ NORMAL</option>
+          <option value="RIESGO">🔴 RIESGO</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:90px">
+        <label>Piso</label>
+        <input id="f-z-piso" type="number" placeholder="0" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveZona()">Guardar</button>
+      <button class="btn" style="background:#eee" onclick="closeForm('f-zona')">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Nombre</th><th>Edificio</th><th>Tipo</th><th>Piso</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tbl-zonas"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NODOS FOG
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-nodos">
+  <div class="section-bar">
+    <h2>Nodos FOG registrados</h2>
+    <button class="btn btn-primary" onclick="toggleForm('f-nodo')">+ Agregar nodo</button>
+  </div>
+
+  <div class="form-box" id="f-nodo">
+    <h3 id="f-nodo-title">Nuevo nodo FOG</h3>
+    <input type="hidden" id="f-n-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input id="f-n-nombre" placeholder="fog-edificioA" />
+      </div>
+      <div class="form-group">
+        <label>Edificio *</label>
+        <select id="f-n-edificio"></select>
+      </div>
+      <div class="form-group">
+        <label>Host *</label>
+        <input id="f-n-host" placeholder="192.168.1.50" />
+      </div>
+      <div class="form-group" style="max-width:110px">
+        <label>Puerto *</label>
+        <input id="f-n-puerto" type="number" value="8080" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveNodo()">Guardar</button>
+      <button class="btn" style="background:#eee" onclick="closeForm('f-nodo')">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Nombre</th><th>Edificio</th><th>Host:Puerto</th><th>Estado</th><th>Últ. sincronización</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tbl-nodos"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     USUARIOS
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-usuarios">
+  <div class="section-bar">
+    <h2>Usuarios del sistema</h2>
+    <button class="btn btn-primary" onclick="toggleForm('f-usuario')">+ Agregar usuario</button>
+  </div>
+
+  <div class="form-box" id="f-usuario">
+    <h3 id="f-usuario-title">Nuevo usuario</h3>
+    <input type="hidden" id="f-u-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Identificador *</label>
+        <input id="f-u-ident" placeholder="matrícula / no. empleado" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>Nombre *</label>
+        <input id="f-u-nombre" placeholder="Nombre completo" />
+      </div>
+      <div class="form-group">
+        <label>Rol *</label>
+        <select id="f-u-rol">
+          <option value="USUARIO">Usuario</option>
+          <option value="BRIGADISTA">Brigadista</option>
+          <option value="ADMINISTRADOR">Administrador</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Edificio</label>
+        <select id="f-u-edificio">
+          <option value="">Sin asignar</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:90px">
+        <label>Activo</label>
+        <select id="f-u-activo">
+          <option value="true">Sí</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Contraseña <span style="color:var(--muted);font-weight:400">(dejar vacío para no cambiar)</span></label>
+        <input id="f-u-password" type="password" placeholder="Contraseña inicial del usuario" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveUsuario()">Guardar</button>
+      <button class="btn" style="background:#eee" onclick="closeForm('f-usuario')">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Identificador</th><th>Nombre</th><th>Rol</th><th>Edificio</th><th>Activo</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tbl-usuarios"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PARÁMETROS
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-parametros">
+  <div class="section-bar">
+    <h2>Parámetros del sistema</h2>
+    <button class="btn btn-primary" onclick="toggleForm('f-param')">+ Agregar parámetro</button>
+  </div>
+
+  <div class="form-box" id="f-param">
+    <h3 id="f-param-title">Nuevo parámetro</h3>
+    <input type="hidden" id="f-p-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Clave *</label>
+        <input id="f-p-clave" placeholder="frecuencia_refresco_seg" />
+      </div>
+      <div class="form-group">
+        <label>Valor *</label>
+        <input id="f-p-valor" placeholder="3" />
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>Descripción</label>
+        <input id="f-p-desc" placeholder="Descripción del parámetro" />
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="saveParametro()">Guardar</button>
+      <button class="btn" style="background:#eee" onclick="closeForm('f-param')">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Clave</th><th>Valor</th><th>Descripción</th><th>Acciones</th></tr>
+      </thead>
+      <tbody id="tbl-parametros"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SINCRONIZAR
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-sync">
+  <div class="section-bar">
+    <h2>Sincronizar configuración</h2>
+  </div>
+
+  <div class="sync-info">
+    <strong>¿Qué hace la sincronización?</strong><br>
+    Envía la configuración actual (zonas, usuarios y parámetros de cada edificio) a todos los nodos FOG
+    registrados. Si un nodo no responde en 2 segundos, queda marcado <strong>OFFLINE</strong> y la
+    configuración queda pendiente de aplicar la próxima vez que esté disponible.
+  </div>
+
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px">
+    <button class="btn btn-sync" onclick="syncTodos()">🔄 Sincronizar todos los nodos</button>
+    <span style="color:var(--muted);font-size:13px">— o elige un nodo específico:</span>
+    <select id="sync-nodo-select" style="padding:8px 12px;border:1px solid #C5DDE2;border-radius:5px;font-size:13px">
+      <option value="">Seleccionar nodo…</option>
+    </select>
+    <button class="btn btn-primary" onclick="syncUno()">Sincronizar</button>
+  </div>
+
+  <div id="sync-results-wrap">
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nodo</th><th>Resultado</th><th>Mensaje</th></tr></thead>
+        <tbody id="tbl-sync"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     EMERGENCIAS
+═══════════════════════════════════════════════════════════════ -->
+<section id="sec-emergencias">
+  <div class="section-bar">
+    <h2>Control de emergencias</h2>
+  </div>
+
+  <div id="emergencia-banner"
+       style="display:none;background:var(--danger);color:#fff;border-radius:8px;
+              padding:14px 20px;margin-bottom:20px;font-weight:600;font-size:14px;
+              align-items:center;gap:10px">
+    <span style="font-size:20px">🚨</span>
+    <span>EMERGENCIA ACTIVA — Todos los nodos FOG están en modo emergencia</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+
+    <div style="background:#fff;border:2px solid var(--danger);border-radius:8px;padding:24px">
+      <div style="font-size:13px;font-weight:700;color:var(--danger);
+                  text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px">
+        🚨 Activar emergencia
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Descripción</label>
+        <input id="em-desc" value="Alerta sísmica" />
+      </div>
+      <div class="form-group" style="margin-bottom:16px">
+        <label>Nivel de intensidad (<span id="em-nivel-val">5</span>/10)</label>
+        <input id="em-nivel" type="range" min="1" max="10" value="5"
+               oninput="document.getElementById('em-nivel-val').textContent=this.value"
+               style="width:100%;accent-color:var(--danger)" />
+      </div>
+      <button class="btn" onclick="activarEmergencia()"
+              style="background:var(--danger);color:#fff;width:100%;
+                     padding:12px;font-size:14px;font-weight:600">
+        🚨 Activar en todos los nodos
+      </button>
+    </div>
+
+    <div style="background:#fff;border:2px solid var(--mint);border-radius:8px;padding:24px">
+      <div style="font-size:13px;font-weight:700;color:#0A8C64;
+                  text-transform:uppercase;letter-spacing:.6px;margin-bottom:16px">
+        ✅ Terminar emergencia
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+        Desactiva la emergencia en todos los nodos FOG. Los datos médicos
+        temporales de usuarios fuera de su edificio serán eliminados
+        automáticamente en cada nodo.
+      </p>
+      <button class="btn" onclick="desactivarEmergencia()"
+              style="background:var(--mint);color:#fff;width:100%;
+                     padding:12px;font-size:14px;font-weight:600">
+        ✅ Desactivar en todos los nodos
+      </button>
+    </div>
+  </div>
+
+  <div id="em-results-wrap" style="display:none">
+    <div style="font-size:12px;font-weight:600;text-transform:uppercase;
+                letter-spacing:.6px;color:var(--muted);margin-bottom:10px">
+      Resultado por nodo FOG
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Nodo</th><th>Resultado</th><th>Mensaje</th></tr></thead>
+        <tbody id="tbl-em-results"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LÓGICA JS
+═══════════════════════════════════════════════════════════════ -->
+<script>
+/* ── Configuración ─────────────────────────────────────────────── */
+const API = 'http://localhost:9090/api';
+const HEADERS_R = { 'Content-Type': 'application/json' };
+const HEADERS_W = { ...HEADERS_R, 'X-Role': 'ADMINISTRADOR' };
+
+/* ── Estado compartido ─────────────────────────────────────────── */
+let edificios = [];   // cache para los selects
+
+/* ── Navegación ────────────────────────────────────────────────── */
+const TITLES = {
+  edificios: ['Edificios', '— Gestión de instalaciones'],
+  zonas:     ['Zonas',     '— Espacios por edificio'],
+  nodos:     ['Nodos FOG', '— Puntos de procesamiento local'],
+  usuarios:  ['Usuarios',  '— Registro del sistema'],
+  parametros:['Parámetros','— Configuración global'],
+  sync:      ['Sincronizar','— Envío de config a nodos FOG'],
+  emergencias:['Emergencias','— Activar / desactivar en todos los nodos'],
+};
+
+function go(id) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  document.querySelectorAll('nav a').forEach(a => {
+    if (a.textContent.trim().toLowerCase().includes(id === 'sync' ? 'sinc' : id.slice(0,4)))
+      a.classList.add('active');
+  });
+  const [t, s] = TITLES[id] || ['—', ''];
+  document.getElementById('page-title').innerHTML = `${t} <span>${s}</span>`;
+  const loaders = { edificios: loadEdificios, zonas: loadZonas, nodos: loadNodos,
+                    usuarios: loadUsuarios, parametros: loadParametros, sync: loadSyncSection,
+                    emergencias: loadEmergencias };
+  if (loaders[id]) loaders[id]();
+}
+
+/* ── Toast ─────────────────────────────────────────────────────── */
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+/* ── Formularios ────────────────────────────────────────────────── */
+function toggleForm(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+function closeForm(id) { document.getElementById(id).classList.remove('open'); }
+function clearForm(id) {
+  document.getElementById(id).querySelectorAll('input,select,textarea').forEach(i => {
+    if (i.type === 'hidden') i.value = '';
+    else if (i.tagName === 'SELECT') i.selectedIndex = 0;
+    else i.value = '';
+  });
+}
+
+/* ── Helpers fetch ─────────────────────────────────────────────── */
+async function get(path) {
+  const r = await fetch(API + path, { headers: HEADERS_R });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function post(path, body) {
+  const r = await fetch(API + path, { method:'POST', headers: HEADERS_W, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function put(path, body) {
+  const r = await fetch(API + path, { method:'PUT', headers: HEADERS_W, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function del(path) {
+  const r = await fetch(API + path, { method:'DELETE', headers: HEADERS_W });
+  if (!r.ok) throw new Error(await r.text());
+}
+
+/* ── Verifica conexion al arrancar ─────────────────────────────── */
+async function checkApi() {
+  try {
+    await get('/edificios');
+    document.getElementById('api-status').textContent = '● Nodo central conectado';
+    document.getElementById('api-status').style.color = '#02C39A';
+  } catch {
+    document.getElementById('api-status').textContent = '● Sin conexión al nodo central';
+    document.getElementById('api-status').style.color = '#C0392B';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EDIFICIOS
+═══════════════════════════════════════════════════════════════ */
+async function loadEdificios() {
+  try {
+    edificios = await get('/edificios');
+    const tbody = document.getElementById('tbl-edificios');
+    if (!edificios.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">No hay edificios. Agrega el primero.</td></tr>'; return; }
+    tbody.innerHTML = edificios.map(e => `
+      <tr>
+        <td><strong>${e.clave}</strong></td>
+        <td>${e.nombre}</td>
+        <td style="color:var(--muted)">${e.descripcion || '—'}</td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="editEdificio(${e.id})">Editar</button>
+          <button class="btn btn-danger" onclick="delEdificio(${e.id})">Eliminar</button>
+        </div></td>
+      </tr>`).join('');
+    populateEdificioSelects();
+  } catch(ex) { toast('Error cargando edificios: ' + ex.message, 'err'); }
+}
+
+function populateEdificioSelects() {
+  const opts = edificios.map(e => `<option value="${e.id}">${e.clave} — ${e.nombre}</option>`).join('');
+  const optsConVacio = `<option value="">Sin asignar</option>` + opts;
+  ['f-z-edificio','f-n-edificio'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.innerHTML = opts;
+  });
+  ['f-u-edificio','zona-filtro'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.innerHTML = (id === 'zona-filtro' ? '<option value="">Todos los edificios</option>' : '<option value="">Sin asignar</option>') + opts;
+  });
+  // select de sync
+  const ss = document.getElementById('sync-nodo-select');
+  if (ss && ss.dataset.loaded) return;
+}
+
+async function saveEdificio() {
+  const id   = document.getElementById('f-edificio-id').value;
+  const body = {
+    clave:       document.getElementById('f-e-clave').value.trim(),
+    nombre:      document.getElementById('f-e-nombre').value.trim(),
+    descripcion: document.getElementById('f-e-desc').value.trim(),
+  };
+  if (!body.clave || !body.nombre) { toast('Clave y nombre son obligatorios', 'err'); return; }
+  try {
+    if (id) await put('/edificios/' + id, body); else await post('/edificios', body);
+    toast(id ? 'Edificio actualizado' : 'Edificio creado');
+    clearForm('f-edificio'); closeForm('f-edificio');
+    loadEdificios();
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+function editEdificio(id) {
+  const e = edificios.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('f-edificio-id').value = e.id;
+  document.getElementById('f-e-clave').value = e.clave;
+  document.getElementById('f-e-nombre').value = e.nombre;
+  document.getElementById('f-e-desc').value = e.descripcion || '';
+  document.getElementById('f-edificio-title').textContent = 'Editar edificio';
+  document.getElementById('f-edificio').classList.add('open');
+}
+
+async function delEdificio(id) {
+  if (!confirm('¿Eliminar este edificio? Se eliminarán también sus zonas, nodos y usuarios asociados.')) return;
+  try { await del('/edificios/' + id); toast('Edificio eliminado'); loadEdificios(); }
+  catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ZONAS
+═══════════════════════════════════════════════════════════════ */
+let zonas = [];
+async function loadZonas() {
+  try {
+    if (!edificios.length) edificios = await get('/edificios');
+    populateEdificioSelects();
+    const filtroId = document.getElementById('zona-filtro').value;
+    const path = filtroId ? `/zonas?edificioId=${filtroId}` : '/zonas';
+    zonas = await get(path);
+    const tbody = document.getElementById('tbl-zonas');
+    if (!zonas.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">No hay zonas.</td></tr>'; return; }
+    tbody.innerHTML = zonas.map(z => {
+      const eNombre = edificios.find(e => e.id === z.edificio?.id)?.clave || '?';
+      const tipoBadge = { SEGURA:'badge-segura', NORMAL:'badge-normal', RIESGO:'badge-riesgo' }[z.tipo] || '';
+      return `<tr>
+        <td>${z.nombre}</td>
+        <td>${eNombre}</td>
+        <td><span class="badge ${tipoBadge}">${z.tipo}</span></td>
+        <td>${z.piso ?? '—'}</td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="editZona(${z.id})">Editar</button>
+          <button class="btn btn-danger" onclick="delZona(${z.id})">Eliminar</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+async function saveZona() {
+  const id = document.getElementById('f-zona-id').value;
+  const edificioId = document.getElementById('f-z-edificio').value;
+  if (!edificioId) { toast('Selecciona un edificio', 'err'); return; }
+  const body = {
+    nombre:     document.getElementById('f-z-nombre').value.trim(),
+    tipo:       document.getElementById('f-z-tipo').value,
+    edificioId: parseInt(edificioId),
+    piso:       document.getElementById('f-z-piso').value ? parseInt(document.getElementById('f-z-piso').value) : null,
+  };
+  if (!body.nombre) { toast('El nombre es obligatorio', 'err'); return; }
+  try {
+    if (id) await put('/zonas/' + id, body); else await post('/zonas', body);
+    toast(id ? 'Zona actualizada' : 'Zona creada');
+    clearForm('f-zona'); closeForm('f-zona'); loadZonas();
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+function editZona(id) {
+  const z = zonas.find(x => x.id === id); if (!z) return;
+  document.getElementById('f-zona-id').value = z.id;
+  document.getElementById('f-z-nombre').value = z.nombre;
+  document.getElementById('f-z-tipo').value = z.tipo;
+  document.getElementById('f-z-edificio').value = z.edificio?.id || '';
+  document.getElementById('f-z-piso').value = z.piso ?? '';
+  document.getElementById('f-zona-title').textContent = 'Editar zona';
+  document.getElementById('f-zona').classList.add('open');
+}
+
+async function delZona(id) {
+  if (!confirm('¿Eliminar esta zona?')) return;
+  try { await del('/zonas/' + id); toast('Zona eliminada'); loadZonas(); }
+  catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   NODOS FOG
+═══════════════════════════════════════════════════════════════ */
+let nodos = [];
+async function loadNodos() {
+  try {
+    if (!edificios.length) { edificios = await get('/edificios'); populateEdificioSelects(); }
+    nodos = await get('/nodos');
+    const tbody = document.getElementById('tbl-nodos');
+    if (!nodos.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay nodos FOG registrados.</td></tr>'; return; }
+    tbody.innerHTML = nodos.map(n => {
+      const eNombre = edificios.find(e => e.id === n.edificio?.id)?.clave || '?';
+      const estadoBadge = { ONLINE:'badge-online', OFFLINE:'badge-offline', DESCONOCIDO:'badge-unknown' }[n.estado] || '';
+      const sincFmt = n.ultimaSincronizacion ? new Date(n.ultimaSincronizacion).toLocaleString('es-MX') : 'Nunca';
+      return `<tr>
+        <td><strong>${n.nombre}</strong></td>
+        <td>${eNombre}</td>
+        <td style="font-family:monospace;font-size:12px">${n.host}:${n.puerto}</td>
+        <td><span class="badge ${estadoBadge}">${n.estado}</span></td>
+        <td style="color:var(--muted);font-size:12px">${sincFmt}</td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="editNodo(${n.id})">Editar</button>
+          <button class="btn btn-danger" onclick="delNodo(${n.id})">Eliminar</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+async function saveNodo() {
+  const id = document.getElementById('f-n-id').value;
+  const edificioId = document.getElementById('f-n-edificio').value;
+  if (!edificioId) { toast('Selecciona un edificio', 'err'); return; }
+  const body = {
+    nombre:     document.getElementById('f-n-nombre').value.trim(),
+    edificioId: parseInt(edificioId),
+    host:       document.getElementById('f-n-host').value.trim(),
+    puerto:     parseInt(document.getElementById('f-n-puerto').value),
+  };
+  if (!body.nombre || !body.host || !body.puerto) { toast('Todos los campos con * son obligatorios', 'err'); return; }
+  try {
+    if (id) await put('/nodos/' + id, body); else await post('/nodos', body);
+    toast(id ? 'Nodo actualizado' : 'Nodo creado');
+    clearForm('f-nodo'); closeForm('f-nodo'); loadNodos();
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+function editNodo(id) {
+  const n = nodos.find(x => x.id === id); if (!n) return;
+  document.getElementById('f-n-id').value = n.id;
+  document.getElementById('f-n-nombre').value = n.nombre;
+  document.getElementById('f-n-edificio').value = n.edificio?.id || '';
+  document.getElementById('f-n-host').value = n.host;
+  document.getElementById('f-n-puerto').value = n.puerto;
+  document.getElementById('f-nodo-title').textContent = 'Editar nodo FOG';
+  document.getElementById('f-nodo').classList.add('open');
+}
+
+async function delNodo(id) {
+  if (!confirm('¿Eliminar este nodo FOG?')) return;
+  try { await del('/nodos/' + id); toast('Nodo eliminado'); loadNodos(); }
+  catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   USUARIOS
+═══════════════════════════════════════════════════════════════ */
+let usuarios = [];
+async function loadUsuarios() {
+  try {
+    if (!edificios.length) { edificios = await get('/edificios'); populateEdificioSelects(); }
+    usuarios = await get('/usuarios');
+    const tbody = document.getElementById('tbl-usuarios');
+    if (!usuarios.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty">No hay usuarios.</td></tr>'; return; }
+    const rolBadge = { USUARIO:'badge-usuario', BRIGADISTA:'badge-brigadista', ADMINISTRADOR:'badge-admin' };
+    tbody.innerHTML = usuarios.map(u => {
+      const eNombre = edificios.find(e => e.id === u.edificio?.id)?.clave || '—';
+      return `<tr>
+        <td style="font-family:monospace;font-size:12px">${u.identificador}</td>
+        <td>${u.nombre}</td>
+        <td><span class="badge ${rolBadge[u.rol]}">${u.rol}</span></td>
+        <td>${eNombre}</td>
+        <td style="color:${u.activo?'var(--teal)':'var(--muted)'}">${u.activo ? '✓ Sí' : '✗ No'}</td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="editUsuario(${u.id})">Editar</button>
+          <button class="btn btn-danger" onclick="delUsuario(${u.id})">Eliminar</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+async function saveUsuario() {
+  const id = document.getElementById('f-u-id').value;
+  const edificioId = document.getElementById('f-u-edificio').value;
+  const pwd = document.getElementById('f-u-password').value;
+  const body = {
+    identificador: document.getElementById('f-u-ident').value.trim(),
+    nombre:        document.getElementById('f-u-nombre').value.trim(),
+    rol:           document.getElementById('f-u-rol').value,
+    edificioId:    edificioId ? parseInt(edificioId) : null,
+    activo:        document.getElementById('f-u-activo').value === 'true',
+    password:      pwd || undefined,
+  };
+  if (!body.identificador || !body.nombre) { toast('Identificador y nombre son obligatorios', 'err'); return; }
+  try {
+    if (id) await put('/usuarios/' + id, body); else await post('/usuarios', body);
+    toast(id ? 'Usuario actualizado' : 'Usuario creado');
+    clearForm('f-usuario'); closeForm('f-usuario'); loadUsuarios();
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+function editUsuario(id) {
+  const u = usuarios.find(x => x.id === id); if (!u) return;
+  document.getElementById('f-u-id').value = u.id;
+  document.getElementById('f-u-ident').value = u.identificador;
+  document.getElementById('f-u-nombre').value = u.nombre;
+  document.getElementById('f-u-rol').value = u.rol;
+  document.getElementById('f-u-edificio').value = u.edificio?.id || '';
+  document.getElementById('f-u-activo').value = u.activo.toString();
+  document.getElementById('f-u-password').value = '';
+  document.getElementById('f-usuario-title').textContent = 'Editar usuario';
+  document.getElementById('f-usuario').classList.add('open');
+}
+
+async function delUsuario(id) {
+  if (!confirm('¿Eliminar este usuario?')) return;
+  try { await del('/usuarios/' + id); toast('Usuario eliminado'); loadUsuarios(); }
+  catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PARÁMETROS
+═══════════════════════════════════════════════════════════════ */
+let params = [];
+async function loadParametros() {
+  try {
+    params = await get('/parametros');
+    const tbody = document.getElementById('tbl-parametros');
+    if (!params.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">No hay parámetros.</td></tr>'; return; }
+    tbody.innerHTML = params.map(p => `
+      <tr>
+        <td style="font-family:monospace;font-size:12px">${p.clave}</td>
+        <td><strong>${p.valor}</strong></td>
+        <td style="color:var(--muted)">${p.descripcion || '—'}</td>
+        <td><div class="actions">
+          <button class="btn btn-edit" onclick="editParam(${p.id})">Editar</button>
+          <button class="btn btn-danger" onclick="delParam(${p.id})">Eliminar</button>
+        </div></td>
+      </tr>`).join('');
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+async function saveParametro() {
+  const id = document.getElementById('f-p-id').value;
+  const body = {
+    clave:       document.getElementById('f-p-clave').value.trim(),
+    valor:       document.getElementById('f-p-valor').value.trim(),
+    descripcion: document.getElementById('f-p-desc').value.trim(),
+  };
+  if (!body.clave || !body.valor) { toast('Clave y valor son obligatorios', 'err'); return; }
+  try {
+    if (id) await put('/parametros/' + id, body); else await post('/parametros', body);
+    toast(id ? 'Parámetro actualizado' : 'Parámetro creado');
+    clearForm('f-param'); closeForm('f-param'); loadParametros();
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+function editParam(id) {
+  const p = params.find(x => x.id === id); if (!p) return;
+  document.getElementById('f-p-id').value = p.id;
+  document.getElementById('f-p-clave').value = p.clave;
+  document.getElementById('f-p-valor').value = p.valor;
+  document.getElementById('f-p-desc').value = p.descripcion || '';
+  document.getElementById('f-param-title').textContent = 'Editar parámetro';
+  document.getElementById('f-param').classList.add('open');
+}
+
+async function delParam(id) {
+  if (!confirm('¿Eliminar este parámetro?')) return;
+  try { await del('/parametros/' + id); toast('Parámetro eliminado'); loadParametros(); }
+  catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SINCRONIZACIÓN
+═══════════════════════════════════════════════════════════════ */
+async function loadSyncSection() {
+  if (!nodos.length) nodos = await get('/nodos');
+  const sel = document.getElementById('sync-nodo-select');
+  sel.innerHTML = '<option value="">Seleccionar nodo…</option>' +
+    nodos.map(n => `<option value="${n.id}">${n.nombre} (${n.host}:${n.puerto})</option>`).join('');
+}
+
+async function syncTodos() {
+  toast('Sincronizando…', 'ok');
+  try {
+    const resultados = await post('/sync', {});
+    renderSyncResults(resultados);
+  } catch(ex) { toast('Error al sincronizar: ' + ex.message, 'err'); }
+}
+
+async function syncUno() {
+  const nodoId = document.getElementById('sync-nodo-select').value;
+  if (!nodoId) { toast('Selecciona un nodo', 'err'); return; }
+  toast('Sincronizando…', 'ok');
+  try {
+    const resultado = await post('/sync/' + nodoId, {});
+    renderSyncResults([resultado]);
+  } catch(ex) { toast('Error al sincronizar: ' + ex.message, 'err'); }
+}
+
+function renderSyncResults(resultados) {
+  const wrap = document.getElementById('sync-results-wrap');
+  const tbody = document.getElementById('tbl-sync');
+  wrap.style.display = 'block';
+  tbody.innerHTML = resultados.map(r => `
+    <tr>
+      <td><strong>${r.nombre || 'ID ' + r.nodoId}</strong></td>
+      <td><span class="badge ${r.exito ? 'badge-online' : 'badge-offline'}">
+        ${r.exito ? '✓ Sincronizado' : '✗ Sin conexión'}
+      </span></td>
+      <td style="color:var(--muted);font-size:12px">${r.mensaje}</td>
+    </tr>`).join('');
+  if (resultados.every(r => r.exito)) toast('Todos los nodos sincronizados');
+  else if (resultados.some(r => !r.exito)) toast('Algunos nodos no respondieron', 'err');
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   EMERGENCIAS
+═══════════════════════════════════════════════════════════════ */
+function loadEmergencias() { /* seccion de accion directa, sin carga */ }
+
+async function activarEmergencia() {
+  const desc  = document.getElementById('em-desc').value.trim() || 'Alerta sismica';
+  const nivel = parseInt(document.getElementById('em-nivel').value);
+  if (!confirm(`Activar emergencia "${desc}" (nivel ${nivel}) en TODOS los nodos FOG?`)) return;
+  toast('Activando emergencia...', 'ok');
+  try {
+    const res = await post('/emergencia/activar', { descripcion: desc, nivelIntensidad: nivel });
+    renderEmResultados(res);
+    mostrarBanner(true);
+    toast(res.every(r => r.exito) ? 'Emergencia activada en todos los nodos'
+          : 'Algunos nodos no respondieron', res.every(r => r.exito) ? 'ok' : 'err');
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+async function desactivarEmergencia() {
+  if (!confirm('Desactivar la emergencia en TODOS los nodos FOG?')) return;
+  toast('Desactivando emergencia...', 'ok');
+  try {
+    const res = await post('/emergencia/desactivar', {});
+    renderEmResultados(res);
+    mostrarBanner(false);
+    toast(res.every(r => r.exito) ? 'Emergencia desactivada' : 'Algunos nodos no respondieron',
+          res.every(r => r.exito) ? 'ok' : 'err');
+  } catch(ex) { toast('Error: ' + ex.message, 'err'); }
+}
+
+function renderEmResultados(resultados) {
+  document.getElementById('em-results-wrap').style.display = 'block';
+  document.getElementById('tbl-em-results').innerHTML = resultados.map(r => `
+    <tr>
+      <td><strong>${r.nombre || 'ID ' + r.nodoId}</strong></td>
+      <td><span class="badge ${r.exito ? 'badge-online' : 'badge-offline'}">
+        ${r.exito ? '✓ OK' : '✗ Sin conexion'}</span></td>
+      <td style="color:var(--muted);font-size:12px">${r.mensaje}</td>
+    </tr>`).join('');
+}
+
+function mostrarBanner(activa) {
+  const b = document.getElementById('emergencia-banner');
+  b.style.display = activa ? 'flex' : 'none';
+}
+
+/* ── Arranque ─────────────────────────────────────────────────── */
+checkApi();
+loadEdificios();
+</script>
+</body>
+</html>
