@@ -452,7 +452,7 @@
       <div class="form-group">
         <label>Rol *</label>
         <select id="f-u-rol">
-          <option value="USUARIO">Usuario</option>
+          <option value="VICTIMA">Víctima</option>
           <option value="BRIGADISTA">Brigadista</option>
           <option value="ADMINISTRADOR">Administrador</option>
         </select>
@@ -896,6 +896,7 @@ async function loadNodos() {
         <td style="color:var(--muted);font-size:12px">${sincFmt}</td>
         <td><div class="actions">
           <button class="btn btn-edit" onclick="editNodo(${n.id})">Editar</button>
+          <button class="btn" style="background:#028090;color:#fff" onclick="verRadiomap(${n.id}, '${n.nombre}')">📍 Zonas</button>
           <button class="btn btn-danger" onclick="delNodo(${n.id})">Eliminar</button>
         </div></td>
       </tr>`;
@@ -1148,6 +1149,25 @@ function renderEmResultados(resultados) {
 function mostrarBanner(activa) {
   const b = document.getElementById('emergencia-banner');
   b.style.display = activa ? 'flex' : 'none';
+}
+
+async function verRadiomap(nodoId, nodoNombre) {
+    try {
+        const resp = await fetch('/api/nodos/' + nodoId + '/radiomap');
+        if (!resp.ok) { alert('FOG no disponible'); return; }
+        const data = await resp.json();
+        if (!data || data.length === 0) {
+            alert('Este nodo no tiene zonas calibradas aún.'); return;
+        }
+        const unicas = [...new Map(data.map(z => [z.zonaId, z])).values()]
+            .sort((a, b) => a.piso - b.piso || a.zonaNombre.localeCompare(b.zonaNombre));
+        const pisoTexto = p => p === 0 ? 'PB' : p > 0 ? 'P'+p : 'S'+Math.abs(p);
+        const filas = unicas.map(z =>
+            '<tr><td>'+z.zonaNombre+'</td><td>'+pisoTexto(z.piso)+'</td><td style="font-family:monospace;font-size:11px">'+z.zonaId+'</td></tr>'
+        ).join('');
+        const html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:12px;padding:28px;min-width:480px;max-width:600px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.2)"><h3 style="margin:0 0 16px;color:#0D2137">📍 Zonas calibradas — '+nodoNombre+'</h3><p style="color:#5A7A85;font-size:13px;margin-bottom:12px">'+unicas.length+' zona(s) en el radio map</p><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#028090;color:#fff"><th style="padding:8px 12px;text-align:left">Zona</th><th style="padding:8px 12px;text-align:left">Piso</th><th style="padding:8px 12px;text-align:left">ID</th></tr></thead><tbody>'+filas+'</tbody></table><button onclick="this.closest(\'div\').parentElement.remove()" style="margin-top:20px;padding:8px 20px;background:#028090;color:#fff;border:none;border-radius:6px;cursor:pointer">Cerrar</button></div></div>';
+        document.body.insertAdjacentHTML('beforeend', html);
+    } catch(e) { alert('No se pudo conectar al nodo FOG.'); }
 }
 
 /* ── Arranque ─────────────────────────────────────────────────── */

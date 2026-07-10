@@ -61,4 +61,23 @@ public class NodoFogController {
         n.setPuerto(req.puerto);
         n.setEdificio(edificio);
     }
+
+    @GetMapping("/{id}/radiomap")
+    public ResponseEntity<?> obtenerRadiomap(@PathVariable Long id) {
+        NodoFog nodo = repo.findById(id).orElse(null);
+        if (nodo == null) return ResponseEntity.notFound().build();
+        try {
+            String resultado = org.springframework.web.client.RestClient.create()
+                    .get()
+                    .uri(nodo.getBaseUrl() + "/api/radiomap")
+                    .retrieve()
+                    .body(String.class);
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(resultado);
+        } catch (Exception e) {
+            return ResponseEntity.status(503)
+                    .body("{\"error\":\"FOG no disponible\"}");
+        }
+    }
 }

@@ -18,7 +18,7 @@ public class Usuario {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 16)
-    private Rol rol = Rol.USUARIO;
+    private Rol rol = Rol.VICTIMA;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "edificio_id")
